@@ -51,26 +51,21 @@ void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
         merge_sort(larr, m, comparison);
         merge_sort(rarr, n - m, comparison);
 
-        int il = 0, ir = 0, j = 0;
-        while (il < m && ir < n - m) {
-            if ((*comparison)(&larr[il], &rarr[ir])) {
-                edges[j] = larr[il];
-                il++;
+        int l = 0, r = 0, j = 0;
+        while (l < m && r < n - m) {
+            if ((*comparison)(&larr[l], &rarr[r])) {
+                edges[j++] = larr[l++];
             } else {
-                edges[j] = rarr[ir];
-                ir++;
+                edges[j++] = rarr[r++];
             }
-            j++;
         }
 
-        while (il < m) {
-            edges[j] = larr[il];
-            il++; j++;
+        while (l < m) {
+            edges[j++] = larr[l++];
         }
 
-        while (ir < n - m) {
-            edges[j] = rarr[ir];
-            ir++; j++;
+        while (r < n - m) {
+            edges[j++] = rarr[r++];
         }
     }
 }
@@ -94,15 +89,6 @@ int main(int argc, char** argv) {
     assert(num_edge >= n - 1);
     // TODO: Parallel Sorting
     merge_sort(edges, num_edge, comparison_weight);
-    // for (int i = 0; i < num_edge - 1; i++) {
-    //     for (int j = i + 1; j < num_edge; j++) {
-    //         if (comparison_weight(&edges[j], &edges[i])) {
-    //             edge temp = edges[i];
-    //             edges[i] = edges[j];
-    //             edges[j] = temp;
-    //         }
-    //     }
-    // }
     par = (int*) malloc(n * sizeof(int));
     for (int i = 0; i < n; i++) {
         par[i] = i;
@@ -123,15 +109,6 @@ int main(int argc, char** argv) {
     printf("%lld\n", total_cost);
     // TODO : Parallel Sorting
     merge_sort(chosen_edges, num_chosen, comparison_node);
-    // for (int i = 0; i < num_chosen - 1; i++) {
-    //     for (int j = i + 1; j < num_chosen; j++) {
-    //         if (comparison_node(&chosen_edges[j], &chosen_edges[i])) {
-    //             edge temp = chosen_edges[i];
-    //             chosen_edges[i] = chosen_edges[j];
-    //             chosen_edges[j] = temp;
-    //         }
-    //     }
-    // }
     for (int i = 0; i < num_chosen; i++) {
         printf("%d-%d\n", chosen_edges[i].u, chosen_edges[i].v);
     }
