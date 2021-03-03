@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < n; i++) {
         par[i] = i;
     }
-    int total_cost = 0;
+    long total_cost = 0;
     int num_chosen = 0;
     chosen_edges = (edge*) malloc(num_edge * sizeof(edge));
     for (int i = 0; i < num_edge; i++) {
@@ -79,9 +79,10 @@ int main(int argc, char** argv) {
         if (merge(u, v)) {
             total_cost += w;
             chosen_edges[num_chosen++] = edges[i];
+            if (num_chosen == n - 1) break;
         }
     }
-    printf("%d\n", total_cost);
+    printf("%lld\n", total_cost);
     // TODO : Parallel Sorting
     for (int i = 0; i < num_chosen - 1; i++) {
         for (int j = i + 1; j < num_chosen; j++) {
@@ -92,7 +93,7 @@ int main(int argc, char** argv) {
             }
         }
     }
-    for (int i = 0; i < num_chosen; i++) {
+    for (int i = 0; i < n - 1; i++) {
         printf("%d-%d\n", chosen_edges[i].u, chosen_edges[i].v);
     }
     double time_taken = ((double) (clock() - t)) / CLOCKS_PER_SEC;
