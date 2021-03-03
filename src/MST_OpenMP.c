@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <omp.h>
 #include <time.h>
+#include <assert.h>
 
 typedef struct edge {
     int u, v, w;
@@ -55,6 +56,7 @@ int main(int argc, char** argv) {
             num_edge++;
         }
     }
+    assert(num_edge >= n - 1);
     // TODO: Parallel Sorting
     for (int i = 0; i < num_edge - 1; i++) {
         for (int j = i + 1; j < num_edge; j++) {
@@ -69,7 +71,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < n; i++) {
         par[i] = i;
     }
-    long total_cost = 0;
+    long long total_cost = 0;
     int num_chosen = 0;
     chosen_edges = (edge*) malloc(num_edge * sizeof(edge));
     for (int i = 0; i < num_edge; i++) {
