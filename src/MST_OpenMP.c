@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <omp.h>
 #include <time.h>
 
@@ -39,6 +40,40 @@ int comparison_node(edge* x, edge* y) {
     return x->u < y->u;
 }
 
+void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
+    if (n > 1) {
+        int m = n / 2;
+        edge larr[m], rarr[n - m];
+        memcpy(larr, edges, m * sizeof(edge));
+        memcpy(rarr, edges + m, (n - m) * sizeof(edge));
+
+        merge_sort(larr, m, comparison);
+        merge_sort(rarr, n - m, comparison);
+
+        int il = 0, ir = 0, j = 0;
+        while (il < m && ir < n - m) {
+            if ((*comparison)(&larr[il], &rarr[ir])) {
+                edges[j] = larr[il];
+                il++;
+            } else {
+                edges[j] = rarr[ir];
+                ir++;
+            }
+            j++;
+        }
+
+        while (il < m) {
+            edges[j] = larr[il];
+            il++; j++;
+        }
+
+        while (ir < n - m) {
+            edges[j] = rarr[ir];
+            ir++; j++;
+        }
+    }
+}
+
 int main(int argc, char** argv) {
     clock_t t = clock();
     scanf("%d", &n);
@@ -56,15 +91,16 @@ int main(int argc, char** argv) {
         }
     }
     // TODO: Parallel Sorting
-    for (int i = 0; i < num_edge - 1; i++) {
-        for (int j = i + 1; j < num_edge; j++) {
-            if (comparison_weight(&edges[j], &edges[i])) {
-                edge temp = edges[i];
-                edges[i] = edges[j];
-                edges[j] = temp;
-            }
-        }
-    }
+    merge_sort(edges, num_edge, comparison_weight);
+    // for (int i = 0; i < num_edge - 1; i++) {
+    //     for (int j = i + 1; j < num_edge; j++) {
+    //         if (comparison_weight(&edges[j], &edges[i])) {
+    //             edge temp = edges[i];
+    //             edges[i] = edges[j];
+    //             edges[j] = temp;
+    //         }
+    //     }
+    // }
     par = (int*) malloc(n * sizeof(int));
     for (int i = 0; i < n; i++) {
         par[i] = i;
@@ -83,20 +119,21 @@ int main(int argc, char** argv) {
     }
     printf("%d\n", total_cost);
     // TODO : Parallel Sorting
-    for (int i = 0; i < num_chosen - 1; i++) {
-        for (int j = i + 1; j < num_chosen; j++) {
-            if (comparison_node(&chosen_edges[j], &chosen_edges[i])) {
-                edge temp = chosen_edges[i];
-                chosen_edges[i] = chosen_edges[j];
-                chosen_edges[j] = temp;
-            }
-        }
-    }
+    merge_sort(chosen_edges, num_chosen, comparison_node);
+    // for (int i = 0; i < num_chosen - 1; i++) {
+    //     for (int j = i + 1; j < num_chosen; j++) {
+    //         if (comparison_node(&chosen_edges[j], &chosen_edges[i])) {
+    //             edge temp = chosen_edges[i];
+    //             chosen_edges[i] = chosen_edges[j];
+    //             chosen_edges[j] = temp;
+    //         }
+    //     }
+    // }
     for (int i = 0; i < num_chosen; i++) {
         printf("%d-%d\n", chosen_edges[i].u, chosen_edges[i].v);
     }
     double time_taken = ((double) (clock() - t)) / CLOCKS_PER_SEC;
-    printf("Waktu Eksekusi: %f\n", time_taken);
+    printf("Waktu Eksekusi: %f ms\n", time_taken);
 
     return 0;
 }
