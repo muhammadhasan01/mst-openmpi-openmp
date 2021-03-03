@@ -19,7 +19,7 @@ int find_set(int u) {
     return par[u] = find_set(par[u]);
 }
 
-int merge(int u, int v) {
+int merge_set(int u, int v) {
     int pu = find_set(u), pv = find_set(v);
     if (pu == pv) return 0;
     par[pv] = pu;
@@ -41,6 +41,30 @@ int comparison_node(edge* x, edge* y) {
     return x->u < y->u;
 }
 
+void merge(edge edges[], edge larr[], int nl, edge rarr[], int nr, int (*comparison)(edge*, edge*)) {
+    int il = 0, ir = 0, j = 0;
+    while (il < nl && ir < nr) {
+        if ((*comparison)(&larr[il], &rarr[ir])) {
+            edges[j] = larr[il];
+            il++;
+        } else {
+            edges[j] = rarr[ir];
+            ir++;
+        }
+        j++;
+    }
+
+    while (il < nl) {
+        edges[j] = larr[il];
+        il++; j++;
+    }
+
+    while (ir < nr) {
+        edges[j] = rarr[ir];
+        ir++; j++;
+    }
+}
+
 void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
     if (n > 1) {
         int m = n / 2;
@@ -51,31 +75,35 @@ void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
         merge_sort(larr, m, comparison);
         merge_sort(rarr, n - m, comparison);
 
-        int il = 0, ir = 0, j = 0;
-        while (il < m && ir < n - m) {
-            if ((*comparison)(&larr[il], &rarr[ir])) {
-                edges[j] = larr[il];
-                il++;
-            } else {
-                edges[j] = rarr[ir];
-                ir++;
-            }
-            j++;
-        }
+        merge(edges, larr, m, rarr, n - m, comparison);
+    }
+}
 
-        while (il < m) {
-            edges[j] = larr[il];
-            il++; j++;
+void merge_sort_parallel(edge edges[], int n, int (*comparison)(edge*, edge*), int num_thread) {
+    if (num_thread > 1) {
+        // Divide
+        int m = n / 2;
+        edge larr[m], rarr[n - m];
+        memcpy(larr, edges, m * sizeof(edge));
+        memcpy(rarr, edges + m, (n - m) * sizeof(edge));
+        // Parallel merge sort
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            merge_sort_parallel(larr, n / 2, comparison, num_thread / 2);
+            #pragma omp section
+            merge_sort_parallel(rarr, n - (n / 2), comparison, num_thread - (num_thread / 2));
         }
-
-        while (ir < n - m) {
-            edges[j] = rarr[ir];
-            ir++; j++;
-        }
+        // Merge result
+        merge(edges, larr, m, rarr, n - m, comparison);
+    } else {
+        merge_sort(edges, n, comparison);
     }
 }
 
 int main(int argc, char** argv) {
+    int num_thread = omp_get_max_threads();
+
     clock_t t = clock();
     scanf("%d", &n);
     edge* edges = (edge*) malloc(n * n * sizeof(edge));
@@ -93,16 +121,9 @@ int main(int argc, char** argv) {
     }
     assert(num_edge >= n - 1);
     // TODO: Parallel Sorting
-    merge_sort(edges, num_edge, comparison_weight);
-    // for (int i = 0; i < num_edge - 1; i++) {
-    //     for (int j = i + 1; j < num_edge; j++) {
-    //         if (comparison_weight(&edges[j], &edges[i])) {
-    //             edge temp = edges[i];
-    //             edges[i] = edges[j];
-    //             edges[j] = temp;
-    //         }
-    //     }
-    // }
+    // merge_sort(edges, num_edge, comparison_weight);
+    merge_sort_parallel(edges, num_edge, comparison_weight, num_thread);
+
     par = (int*) malloc(n * sizeof(int));
     for (int i = 0; i < n; i++) {
         par[i] = i;
@@ -114,7 +135,7 @@ int main(int argc, char** argv) {
         int u = edges[i].u;
         int v = edges[i].v;
         int w = edges[i].w;
-        if (merge(u, v)) {
+        if (merge_set(u, v)) {
             total_cost += w;
             chosen_edges[num_chosen++] = edges[i];
             if (num_chosen == n - 1) break;
@@ -122,16 +143,9 @@ int main(int argc, char** argv) {
     }
     printf("%lld\n", total_cost);
     // TODO : Parallel Sorting
-    merge_sort(chosen_edges, num_chosen, comparison_node);
-    // for (int i = 0; i < num_chosen - 1; i++) {
-    //     for (int j = i + 1; j < num_chosen; j++) {
-    //         if (comparison_node(&chosen_edges[j], &chosen_edges[i])) {
-    //             edge temp = chosen_edges[i];
-    //             chosen_edges[i] = chosen_edges[j];
-    //             chosen_edges[j] = temp;
-    //         }
-    //     }
-    // }
+    // merge_sort(chosen_edges, num_chosen, comparison_node);
+    merge_sort_parallel(chosen_edges, num_chosen, comparison_node, num_thread);
+
     for (int i = 0; i < num_chosen; i++) {
         printf("%d-%d\n", chosen_edges[i].u, chosen_edges[i].v);
     }
