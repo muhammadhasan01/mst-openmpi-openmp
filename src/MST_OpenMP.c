@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
     printf("%lld\n", total_cost);
     // TODO : Parallel Sorting
     merge_sort(chosen_edges, num_chosen, comparison_node);
-    for (int i = 0; i < num_chosen; i++) {
+    for (int i = 0; i < n - 1; i++) {
         printf("%d-%d\n", chosen_edges[i].u, chosen_edges[i].v);
     }
     double time_taken = ((double) (clock() - t)) / CLOCKS_PER_SEC;
