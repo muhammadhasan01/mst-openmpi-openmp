@@ -66,8 +66,6 @@ void merge(edge edges[], edge larr[], int nl, edge rarr[], int nr, int (*compari
 }
 
 void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
-    printf(">> %d\n", omp_get_thread_num());
-
     if (n > 1) {
         int m = n / 2;
         edge larr[m], rarr[n - m];
@@ -90,28 +88,6 @@ void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
     }
 }
 
-// void merge_sort_parallel(edge edges[], int n, int (*comparison)(edge*, edge*), int num_thread) {
-//     if (num_thread > 1) {
-//         // Divide
-//         int m = n / 2;
-//         edge larr[m], rarr[n - m];
-//         memcpy(larr, edges, m * sizeof(edge));
-//         memcpy(rarr, edges + m, (n - m) * sizeof(edge));
-//         // Parallel merge sort
-//         #pragma omp parallel sections
-//         {
-//             #pragma omp section
-//             merge_sort_parallel(larr, n / 2, comparison, num_thread / 2);
-//             #pragma omp section
-//             merge_sort_parallel(rarr, n - (n / 2), comparison, num_thread - (num_thread / 2));
-//         }
-//         // Merge result
-//         merge(edges, larr, m, rarr, n - m, comparison);
-//     } else {
-//         merge_sort(edges, n, comparison);
-//     }
-// }
-
 int main(int argc, char** argv) {
     int num_thread = omp_get_max_threads();
     // omp_set_max_active_levels(omp_get_max_threads());
@@ -132,10 +108,7 @@ int main(int argc, char** argv) {
         }
     }
     assert(num_edge >= n - 1);
-    // TODO: Parallel Sorting
     merge_sort(edges, num_edge, comparison_weight);
-    // merge_sort_parallel(edges, num_edge, comparison_weight, num_thread);
-
     par = (int*) malloc(n * sizeof(int));
     for (int i = 0; i < n; i++) {
         par[i] = i;
@@ -154,10 +127,7 @@ int main(int argc, char** argv) {
         }
     }
     printf("%lld\n", total_cost);
-    // TODO : Parallel Sorting
     merge_sort(chosen_edges, num_chosen, comparison_node);
-    // merge_sort_parallel(chosen_edges, num_chosen, comparison_node, num_thread);
-
     for (int i = 0; i < num_chosen; i++) {
         printf("%d-%d\n", chosen_edges[i].u, chosen_edges[i].v);
     }
