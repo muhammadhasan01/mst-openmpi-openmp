@@ -41,8 +41,8 @@ int comparison_node(edge* x, edge* y) {
     return x->u < y->u;
 }
 
-void merge(edge edges[], edge larr[], int nl, edge rarr[], int nr, int (*comparison)(edge*, edge*)) {
-    int il = 0, ir = 0, j = 0;
+void merge(edge edges[], edge larr[], int nl, edge rarr[], int nr, int (*comparison)(edge*, edge*), int offset) {
+    int il = 0, ir = 0, j = offset;
     while (il < nl && ir < nr) {
         if ((*comparison)(&larr[il], &rarr[ir])) {
             edges[j] = larr[il];
@@ -75,8 +75,26 @@ void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
         merge_sort(larr, m, comparison);
         merge_sort(rarr, n - m, comparison);
 
-        merge(edges, larr, m, rarr, n - m, comparison);
+        merge(edges, larr, m, rarr, n - m, comparison, 0);
     }
+}
+
+void merge_gather(edge gather[], int sendcounts[], int displ[], int (*comparison)(edge*, edge*), int l, int r) {
+    if (l >= r) return;
+    int mid = (l + r) >> 1;
+    merge_gather(gather, sendcounts, displ, comparison, l, mid);
+    merge_gather(gather, sendcounts, displ, comparison, mid + 1, r);
+    int nl = 0, nr = 0;
+    for (int i = l; i <= r; i++) {
+        if (i <= mid)
+            nl += sendcounts[i];
+        else
+            nr += sendcounts[i];
+    }
+    edge larr[nl], rarr[nr];
+    memcpy(larr, gather + displ[l], nl * sizeof(edge));
+    memcpy(rarr, gather + displ[l] + nl, nr * sizeof(edge));
+    merge(gather, larr, nl, rarr, nr, comparison, displ[l]);
 }
 
 int main(int argc, char** argv) {
@@ -147,6 +165,15 @@ int main(int argc, char** argv) {
         merge_sort(scattered, sendcounts[world_rank], comparison_weight);
         MPI_Gatherv(scattered, sendcounts[world_rank], MPI_EDGE, gathered, sendcounts, displs, MPI_EDGE, 0, MPI_COMM_WORLD);
 
+        if (world_rank == 0) {
+            for (int i = 0; i < num_edge; i++) {
+                edges[i] = gathered[i];
+            }
+            merge_gather(gathered, sendcounts, displs, comparison_weight, 0, world_size - 1);
+            for (int i = 0; i < num_edge; i++) {
+                edges[i] = gathered[i];
+            }
+        }
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
@@ -198,6 +225,13 @@ int main(int argc, char** argv) {
         MPI_Scatterv(chosen_edges, sendcounts, displs, MPI_EDGE, scattered, sendcounts[world_rank], MPI_EDGE, 0, MPI_COMM_WORLD);
         merge_sort(scattered, sendcounts[world_rank], comparison_node);
         MPI_Gatherv(scattered, sendcounts[world_rank], MPI_EDGE, gathered, sendcounts, displs, MPI_EDGE, 0, MPI_COMM_WORLD);
+
+         if (world_rank == 0) {
+            merge_gather(gathered, sendcounts, displs, comparison_node, 0, world_size - 1);
+            for (int i = 0; i < num_chosen; i++) {
+                chosen_edges[i] = gathered[i];
+            }
+        }
 
         MPI_Barrier(MPI_COMM_WORLD);
     }
