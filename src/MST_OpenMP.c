@@ -68,7 +68,8 @@ void merge(edge edges[], edge larr[], int nl, edge rarr[], int nr, int (*compari
 void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
     if (n > 1) {
         int m = n / 2;
-        edge larr[m], rarr[n - m];
+        edge* larr = malloc(m * sizeof(edge));
+        edge* rarr = malloc((n - m) * sizeof(edge));
         memcpy(larr, edges, m * sizeof(edge));
         memcpy(rarr, edges + m, (n - m) * sizeof(edge));
 
@@ -85,6 +86,7 @@ void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
         }
 
         merge(edges, larr, m, rarr, n - m, comparison);
+        free(larr); free(rarr);
     }
 }
 
@@ -94,7 +96,7 @@ int main(int argc, char** argv) {
 
     clock_t t = clock();
     scanf("%d", &n);
-    edge* edges = (edge*) malloc(n * n * sizeof(edge));
+    edge* edges = (edge*) malloc(n * (n + 1) / 2 * sizeof(edge));
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             int x;

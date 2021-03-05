@@ -68,7 +68,8 @@ void merge(edge edges[], edge larr[], int nl, edge rarr[], int nr, int (*compari
 void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
     if (n > 1) {
         int m = n / 2;
-        edge larr[m], rarr[n - m];
+        edge* larr = malloc(m * sizeof(edge));
+        edge* rarr = malloc((n - m) * sizeof(edge));
         memcpy(larr, edges, m * sizeof(edge));
         memcpy(rarr, edges + m, (n - m) * sizeof(edge));
 
@@ -76,6 +77,7 @@ void merge_sort(edge edges[], int n, int (*comparison)(edge*, edge*)) {
         merge_sort(rarr, n - m, comparison);
 
         merge(edges, larr, m, rarr, n - m, comparison, 0);
+        free(larr); free(rarr);
     }
 }
 
@@ -91,10 +93,12 @@ void merge_gather(edge gather[], int sendcounts[], int displ[], int (*comparison
         else
             nr += sendcounts[i];
     }
-    edge larr[nl], rarr[nr];
+    edge* larr = malloc(nl * sizeof(edge));
+    edge* rarr = malloc(nr * sizeof(edge));
     memcpy(larr, gather + displ[l], nl * sizeof(edge));
     memcpy(rarr, gather + displ[l] + nl, nr * sizeof(edge));
     merge(gather, larr, nl, rarr, nr, comparison, displ[l]);
+    free(larr); free(rarr);
 }
 
 int main(int argc, char** argv) {
@@ -119,7 +123,7 @@ int main(int argc, char** argv) {
     clock_t t = clock();
     if (world_rank == 0) {
         scanf("%d", &n);
-        edges = (edge*) malloc(n * n * sizeof(edge));
+        edges = (edge*) malloc(n * (n + 1) / 2 * sizeof(edge));
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 int x;
@@ -146,12 +150,12 @@ int main(int argc, char** argv) {
     // Process
     {
         // Define array for gather and scatter
-        edge gathered[num_edge];
+        edge* gathered = malloc(num_edge * sizeof(edge));
         int scattered_size = num_edge / world_size;
-        edge scattered[scattered_size + 1];
+        edge* scattered = malloc((scattered_size + 1) * sizeof(edge));
 
-        int sendcounts[world_size];
-        int displs[world_size];
+        int* sendcounts = malloc(world_size * sizeof(int));
+        int* displs = malloc(world_size * sizeof(int));
         int rem = num_edge % world_size;
         int sum = 0;
         for (int i = 0; i < world_size; i++) {
@@ -174,6 +178,8 @@ int main(int argc, char** argv) {
                 edges[i] = gathered[i];
             }
         }
+        free(gathered); free(scattered);
+        free(sendcounts); free(displs);
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
@@ -207,12 +213,12 @@ int main(int argc, char** argv) {
 
     {
         // Define array for gather and scatter
-        edge gathered[num_chosen];
+        edge* gathered = malloc(num_chosen * sizeof(edge));
         int scattered_size = num_chosen / world_size;
-        edge scattered[scattered_size + 1];
+        edge* scattered = malloc((scattered_size + 1) * sizeof(edge));
 
-        int sendcounts[world_size];
-        int displs[world_size];
+        int* sendcounts = malloc(world_size * sizeof(int));
+        int* displs = malloc(world_size * sizeof(int));
         int rem = num_chosen % world_size;
         int sum = 0;
         for (int i = 0; i < world_size; i++) {
@@ -233,6 +239,8 @@ int main(int argc, char** argv) {
             }
         }
 
+        free(gathered); free(scattered);
+        free(sendcounts); free(displs);
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
